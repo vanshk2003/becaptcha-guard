@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.DS_Store
+.ipynb_checkpoints/
+# generated artifacts (keep the folder + samples, ignore large/local outputs)
+artifacts/models/
+artifacts/dataset/
+artifacts/forensic/
+artifacts/config.json
+# keep reports (figures) so the repo shows results out of the box:
+!artifacts/reports/

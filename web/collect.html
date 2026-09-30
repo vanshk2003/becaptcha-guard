@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>BeCAPTCHA-Guard — behavioural data collection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#0A0E14;--panel:#121821;--panel2:#0F141C;--grid:#1E2733;--line:#243040;
+    --human:#35D0BA;--bot:#F0A93B;--text:#C7D0DB;--muted:#6B7686;--target:#35D0BA;
+    --ui:"Space Grotesk",system-ui,sans-serif;--mono:"IBM Plex Mono",monospace;}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--ink);color:var(--text);font-family:var(--ui);line-height:1.5;overflow:hidden}
+  .wrap{max-width:960px;margin:0 auto;padding:34px 24px;height:100%;display:flex;flex-direction:column}
+  header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--line);
+    padding-bottom:14px;margin-bottom:20px;flex:none}
+  h1{font-size:19px;margin:0}h1 span{color:var(--human)}
+  .prog{font-family:var(--mono);font-size:12px;color:var(--muted)}
+  a{color:var(--human);text-decoration:none;font-family:var(--mono);font-size:12px}
+  .screen{flex:1;position:relative}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px;max-width:560px;margin:0 auto}
+  h2{font-size:17px;margin:0 0 12px}
+  p.desc{color:var(--muted);font-size:14px;margin:0 0 18px}
+  label.f{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px;letter-spacing:.03em}
+  select,input[type=text]{width:100%;background:var(--ink);border:1px solid var(--line);color:var(--text);
+    border-radius:7px;padding:11px 12px;font-family:var(--mono);font-size:13px}
+  select:focus,input:focus{outline:none;border-color:var(--human)}
+  .consent{display:flex;gap:12px;align-items:flex-start;margin:18px 0;font-size:13px;color:var(--muted)}
+  .consent input{margin-top:3px;accent-color:var(--human)}
+  button{background:var(--human);color:#04120E;border:none;border-radius:8px;padding:13px 20px;
+    font-family:var(--ui);font-weight:700;font-size:15px;cursor:pointer;transition:.15s;width:100%}
+  button:hover{filter:brightness(1.08)}button:disabled{opacity:.4;cursor:not-allowed}
+  .note{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.5;border-top:1px solid var(--grid);padding-top:12px}
+  /* target arena */
+  #arena{position:absolute;inset:0;border:1px solid var(--line);border-radius:12px;background:
+    repeating-linear-gradient(0deg,transparent,transparent 26px,var(--grid) 26px,var(--grid) 27px),
+    repeating-linear-gradient(90deg,transparent,transparent 26px,var(--grid) 26px,var(--grid) 27px),var(--panel2);
+    overflow:hidden;cursor:crosshair}
+  .target{position:absolute;width:44px;height:44px;border-radius:50%;background:var(--target);
+    box-shadow:0 0 0 6px rgba(53,208,122,.15),0 0 22px rgba(53,208,122,.5);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;color:#04120E;font-weight:700;
+    transform:translate(-50%,-50%);transition:transform .08s}
+  .target:active{transform:translate(-50%,-50%) scale(.9)}
+  .hud{position:absolute;top:14px;left:14px;font-family:var(--mono);font-size:12px;color:var(--muted);
+    background:rgba(10,14,20,.7);padding:6px 10px;border-radius:6px}
+  .hud b{color:var(--human)}
+  .typing{max-width:600px;margin:0 auto;padding-top:6px}
+  .phrase{font-family:var(--mono);font-size:18px;letter-spacing:.02em;background:var(--panel2);
+    border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:14px;user-select:none}
+  .match{color:var(--human)}.miss{color:var(--bot)}
+  .done{text-align:center}
+  .big{font-size:42px;font-weight:700;color:var(--human)}
+  .stat{font-family:var(--mono);font-size:13px;color:var(--muted);margin-top:8px}
+  .row{display:flex;gap:12px;margin-top:16px}
+  .row button.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel);
+    border:1px solid var(--human);color:var(--human);font-family:var(--mono);font-size:12px;
+    padding:8px 14px;border-radius:20px;opacity:0;transition:.25s}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>BeCAPTCHA·<span>Guard</span> — data collection</h1>
+    <div><span class="prog" id="prog"></span> &nbsp; <a href="/explore">dataset explorer →</a></div>
+  </header>
+  <div class="screen" id="screen"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ---------------- config & label handling ----------------
+const params = new URLSearchParams(location.search);
+// label can be forced by automation scripts:  /collect-ui?label=selenium_linear&auto=1
+const forcedLabel = params.get('label');
+const autoRun = params.get('auto') === '1';
+const CFG = { targetTrials: 8, phrase: "the quick brown fox jumps" };
+const BOT_FAMILIES = ["selenium_linear","puppeteer_step","bezier_bot","minjerk_adv"];
+
+const S = {
+  participant: 'P-' + Math.random().toString(36).slice(2,8).toUpperCase(),
+  label: forcedLabel || 'human',
+  consent: false, trial: 0, stored: 0,
+};
+const screen = document.getElementById('screen');
+const progEl = document.getElementById('prog');
+const toast = document.getElementById('toast');
+function showToast(t){toast.textContent=t;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1400);}
+function setProg(){progEl.textContent = S.stored ? `${S.stored} trials stored · ${S.participant}` : S.participant;}
+
+// ---------------- telemetry buffers ----------------
+let buf = null;
+function newBuffer(){ buf = {mx:[],my:[],mt:[],dwell:[],flight:[],down:{},lastUp:null,
+  clicks:0,inter:[],press:[],lastClick:null,downTs:null,scroll:false,focus:false,t0:performance.now()}; }
+newBuffer();
+addEventListener('mousemove',e=>{ if(!buf) return; const t=performance.now();
+  buf.mx.push(e.clientX);buf.my.push(e.clientY);buf.mt.push(t); });
+addEventListener('scroll',()=>{if(buf)buf.scroll=true;},{passive:true});
+addEventListener('focus',()=>{if(buf)buf.focus=true;});
+document.addEventListener('mousedown',()=>{if(buf)buf.downTs=performance.now();});
+document.addEventListener('mouseup',()=>{ if(!buf) return; const t=performance.now();
+  if(buf.downTs)buf.press.push(t-buf.downTs); buf.clicks++;
+  if(buf.lastClick)buf.inter.push(t-buf.lastClick); buf.lastClick=t; });
+document.addEventListener('keydown',e=>{ if(buf && !(e.key in buf.down)) buf.down[e.key]=performance.now(); });
+document.addEventListener('keyup',e=>{ if(!buf) return; const t=performance.now();
+  if(e.key in buf.down){buf.dwell.push(t-buf.down[e.key]);delete buf.down[e.key];}
+  if(buf.lastUp!==null)buf.flight.push(t-buf.lastUp); buf.lastUp=t; });
+
+function buildPayload(task){
+  const total=performance.now()-buf.t0;
+  const n=buf.mx.length+buf.dwell.length+buf.clicks;
+  const t0=buf.mt.length?buf.mt[0]:0;
+  return {
+    mouse:{x:buf.mx.slice(),y:buf.my.slice(),t:buf.mt.map(v=>v-t0)},
+    keystroke:{dwell:buf.dwell.slice(),flight:buf.flight.slice()},
+    clicks:{n_clicks:buf.clicks,inter_click_ms:buf.inter.slice(),press_ms:buf.press.slice()},
+    session:{total_ms:total,n_events:n,event_rate_hz:n/(total/1000+1e-6),
+             has_focus_events:buf.focus,has_scroll:buf.scroll,
+             webdriver_flag:navigator.webdriver===true},
+    participant:S.participant, label:S.label, task, consent:S.consent,
+    user_agent:navigator.userAgent
+  };
+}
+async function submit(task){
+  const payload=buildPayload(task);
+  if(payload.mouse.x.length<3 && task==='target_acquisition') return false;
+  try{
+    const r=await fetch('/collect',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)});
+    if(r.ok){ S.stored++; setProg(); showToast('trial stored ✓'); return true; }
+  }catch(e){ showToast('store failed'); }
+  return false;
+}
+
+// ---------------- screens ----------------
+function setupScreen(){
+  const opts = ['human',...BOT_FAMILIES].map(l=>`<option value="${l}" ${l===S.label?'selected':''}>${l}</option>`).join('');
+  screen.innerHTML = `<div class="card">
+    <h2>Behavioural session — informed consent</h2>
+    <p class="desc">This study records how your mouse moves and how you type while completing two short tasks
+      (about 60 seconds). It builds a research dataset to distinguish genuine users from automated bots.</p>
+    <label class="f">PARTICIPANT ID (anonymous, auto-generated)</label>
+    <input type="text" value="${S.participant}" readonly>
+    <label class="f">SESSION LABEL</label>
+    <select id="label">${opts}</select>
+    <div class="consent"><input type="checkbox" id="consent">
+      <span>I am participating voluntarily and consent to my anonymised interaction timing being stored and
+      used for research. No personal identity, keystroke <em>content</em> for passwords, or screen contents are collected.</span></div>
+    <button id="start" disabled>Begin tasks</button>
+    <div class="note"><b>Ethics.</b> Only interaction <em>timing and motion</em> are stored, keyed to a random ID.
+      Typed text is a fixed public phrase. Data is used solely for the CAPTCHA-bypass-detection study and can be
+      deleted on request. For a live deployment, obtain institutional ethics/IRB approval before collecting from human participants.</div>
+  </div>`;
+  const cb=document.getElementById('consent'), start=document.getElementById('start');
+  cb.addEventListener('change',()=>{S.consent=cb.checked;start.disabled=!cb.checked;});
+  document.getElementById('label').addEventListener('change',e=>S.label=e.target.value);
+  start.addEventListener('click',()=>{S.trial=0;targetScreen();});
+}
+
+function targetScreen(){
+  screen.innerHTML = `<div id="arena"><div class="hud">TASK 1 / 2 · target acquisition · trial <b id="tn">1</b>/${CFG.targetTrials}</div></div>`;
+  const arena=document.getElementById('arena');
+  spawnTarget(arena);
+}
+function spawnTarget(arena){
+  document.getElementById('tn').textContent = S.trial+1;
+  const r=arena.getBoundingClientRect();
+  const pad=50;
+  const tx=pad+Math.random()*(r.width-2*pad), ty=pad+Math.random()*(r.height-2*pad);
+  const el=document.createElement('div'); el.className='target';
+  el.style.left=tx+'px'; el.style.top=ty+'px'; el.textContent='✓';
+  arena.appendChild(el);
+  newBuffer();                       // record movement from now until this target is hit
+  el.addEventListener('click', async (e)=>{
+    e.stopPropagation();
+    await submit('target_acquisition');
+    el.remove(); S.trial++;
+    if(S.trial>=CFG.targetTrials){ typingScreen(); }
+    else { spawnTarget(arena); }
+  });
+}
+
+function typingScreen(){
+  screen.innerHTML = `<div class="typing card">
+    <h2>Task 2 / 2 — type the phrase</h2>
+    <p class="desc">Type the phrase below exactly, at your natural pace, then press <b>Store</b>.</p>
+    <div class="phrase" id="ph"></div>
+    <input type="text" id="ta" placeholder="start typing…" autocomplete="off" spellcheck="false">
+    <button id="store" style="margin-top:16px" disabled>Store & finish</button>
+  </div>`;
+  const phrase=CFG.phrase, ph=document.getElementById('ph'), ta=document.getElementById('ta'),
+        store=document.getElementById('store');
+  ph.innerHTML=[...phrase].map(c=>`<span>${c==' '?'&nbsp;':c}</span>`).join('');
+  newBuffer(); ta.focus();
+  ta.addEventListener('input',()=>{
+    const v=ta.value; const spans=ph.querySelectorAll('span');
+    spans.forEach((s,i)=>{ s.className = i<v.length ? (v[i]===phrase[i]?'match':'miss') : ''; });
+    store.disabled = v.length < Math.floor(phrase.length*0.6);
+  });
+  store.addEventListener('click', async ()=>{ store.disabled=true; await submit('typing'); doneScreen(); });
+}
+
+function doneScreen(){
+  buf=null;
+  screen.innerHTML = `<div class="card done">
+    <div class="big">Thank you</div>
+    <div class="stat">${S.stored} labelled trials stored for participant ${S.participant}</div>
+    <div class="stat">label: ${S.label}</div>
+    <div class="row">
+      <button onclick="location.reload()">New participant</button>
+      <button class="ghost" onclick="location.href='/explore'">View dataset →</button>
+    </div>
+  </div>`;
+}
+
+// ---------------- automation entry point ----------------
+// A Selenium/Puppeteer script can load /collect-ui?label=<family>&auto=1 and drive
+// the DOM (click .target, type into #ta). autoRun just skips the consent gate so
+// scripted bot sessions record cleanly under the chosen label.
+function boot(){
+  setProg();
+  if(autoRun){ S.consent=true; S.label=forcedLabel||'selenium_linear'; targetScreen(); }
+  else setupScreen();
+}
+boot();
+</script>
+</body>
+</html>

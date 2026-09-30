@@ -1,0 +1,10 @@
+services:
+  becaptcha-guard:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      # persist the collected corpus + forensic log across restarts
+      - ./artifacts/dataset:/app/artifacts/dataset
+      - ./artifacts/forensic:/app/artifacts/forensic
+    restart: unless-stopped

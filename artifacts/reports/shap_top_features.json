@@ -1,0 +1,62 @@
+[
+  {
+    "feature": "straightness",
+    "mean_abs_shap": 1.544359564781189
+  },
+  {
+    "feature": "dt_regularity",
+    "mean_abs_shap": 1.2710537910461426
+  },
+  {
+    "feature": "speed_cv",
+    "mean_abs_shap": 0.8967227339744568
+  },
+  {
+    "feature": "curv_std",
+    "mean_abs_shap": 0.5809221863746643
+  },
+  {
+    "feature": "angchg_min",
+    "mean_abs_shap": 0.547363817691803
+  },
+  {
+    "feature": "curv_mean",
+    "mean_abs_shap": 0.5183396339416504
+  },
+  {
+    "feature": "speed_median",
+    "mean_abs_shap": 0.4383746385574341
+  },
+  {
+    "feature": "speed_std",
+    "mean_abs_shap": 0.3530682623386383
+  },
+  {
+    "feature": "curv_cv",
+    "mean_abs_shap": 0.33640116453170776
+  },
+  {
+    "feature": "accel_std",
+    "mean_abs_shap": 0.3245638906955719
+  },
+  {
+    "feature": "path_length",
+    "mean_abs_shap": 0.2508450150489807
+  },
+  {
+    "feature": "duration_ms",
+    "mean_abs_shap": 0.22105510532855988
+  },
+  {
+    "feature": "speed_max",
+    "mean_abs_shap": 0.20673690736293793
+  },
+  {
+    "feature": "jerk_std",
+    "mean_abs_shap": 0.1960413008928299
+  },
+  {
+    "feature": "interclick_min",
+    "mean_abs_shap": 0.1850900799036026
+  }
+]

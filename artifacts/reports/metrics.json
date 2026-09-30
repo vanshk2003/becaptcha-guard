@@ -1,0 +1,67 @@
+{
+  "logreg": {
+    "accuracy": 0.8911290322580645,
+    "precision": 0.954954954954955,
+    "recall": 0.828125,
+    "f1": 0.8870292887029289,
+    "roc_auc": 0.9548177083333333,
+    "eer": 0.12708333333333333,
+    "bezier_bot_recall": 0.984375,
+    "human_TNR": 0.9583333333333334,
+    "minjerk_adv_recall": 0.328125,
+    "puppeteer_step_recall": 1.0,
+    "selenium_linear_recall": 1.0
+  },
+  "svm_rbf": {
+    "accuracy": 0.8608870967741935,
+    "precision": 0.9516908212560387,
+    "recall": 0.76953125,
+    "f1": 0.8509719222462203,
+    "roc_auc": 0.9293782552083334,
+    "eer": 0.16341145833333331,
+    "bezier_bot_recall": 1.0,
+    "human_TNR": 0.9583333333333334,
+    "minjerk_adv_recall": 0.078125,
+    "puppeteer_step_recall": 1.0,
+    "selenium_linear_recall": 1.0
+  },
+  "random_forest": {
+    "accuracy": 0.8810483870967742,
+    "precision": 0.9852216748768473,
+    "recall": 0.78125,
+    "f1": 0.8714596949891068,
+    "roc_auc": 0.9394368489583335,
+    "eer": 0.137109375,
+    "bezier_bot_recall": 1.0,
+    "human_TNR": 0.9875,
+    "minjerk_adv_recall": 0.125,
+    "puppeteer_step_recall": 1.0,
+    "selenium_linear_recall": 1.0
+  },
+  "xgboost": {
+    "accuracy": 0.8870967741935484,
+    "precision": 0.9347826086956522,
+    "recall": 0.83984375,
+    "f1": 0.8847736625514403,
+    "roc_auc": 0.957080078125,
+    "eer": 0.11692708333333333,
+    "bezier_bot_recall": 1.0,
+    "human_TNR": 0.9375,
+    "minjerk_adv_recall": 0.359375,
+    "puppeteer_step_recall": 1.0,
+    "selenium_linear_recall": 1.0
+  },
+  "deep_behaviornet": {
+    "accuracy": 0.9596774193548387,
+    "precision": 0.9306569343065694,
+    "recall": 0.99609375,
+    "f1": 0.9622641509433962,
+    "roc_auc": 0.9969726562499999,
+    "eer": 0.020442708333333334,
+    "bezier_bot_recall": 1.0,
+    "human_TNR": 0.9208333333333333,
+    "minjerk_adv_recall": 0.984375,
+    "puppeteer_step_recall": 1.0,
+    "selenium_linear_recall": 1.0
+  }
+}
